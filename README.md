@@ -75,7 +75,7 @@ EcoVision/
 
 🛠️ Installation
 1. Clone the Repository
-git clone https://github.com/yourusername/EcoVision.git
+git clone https://github.com/jaybisen08/EcoVision.git
 cd EcoVision
 
 2. Install Dependencies
