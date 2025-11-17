@@ -1,2 +1,0 @@
-fonts/DejaVuSans.ttf
-UNICODE_FONT_PATH = os.path.join(FONTS_DIR, "DejaVuSans.ttf")
