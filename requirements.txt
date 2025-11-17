@@ -1,0 +1,8 @@
+streamlit
+pillow
+matplotlib
+pandas
+fpdf2
+google-generativeai
+requests
+streamlit-lottie
