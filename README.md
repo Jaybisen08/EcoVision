@@ -1,157 +1,156 @@
-🌿 What is EcoVision? – Detailed Description
+🌿 EcoVision – AI Smart Waste Analyzer
 
-EcoVision is an AI-powered waste analysis system designed to help individuals, students, communities, and environmental teams identify waste correctly and understand its ecological impact. It combines cutting-edge computer vision, environmental intelligence, and user-friendly design to make waste management smarter and more accessible for everyone.
+🌎 Overview
 
-♻️ Purpose
+EcoVision is an AI-powered waste analysis system that helps identify waste from images, assess its environmental impact, and guide users on proper disposal.
+It features a beautiful, animated UI, PDF reporting, and a full analytics dashboard.
 
-EcoVision was built to solve a growing problem:
-Most people don't know what type of waste they are holding or how to dispose of it properly.
-Incorrect disposal leads to:
+🚀 Features
+🤖 AI Waste Classification
 
-Soil and groundwater contamination
+Powered by Google Gemini 2.5 Flash
 
-Microplastic pollution
+Detects: organic, plastic, paper, textile, e-waste, hazardous, mixed, etc.
 
-Toxic emissions
+Returns confidence score + expert notes
 
-Higher recycling costs
+🌍 Environmental Impact Breakdown
 
-Health risks
+Visualized using Matplotlib pie chart:
 
-EcoVision bridges this knowledge gap using AI.
+Greenhouse Emissions
 
-🤖 How EcoVision Works
-1. Upload an Image
+Soil Contamination
 
-Users simply upload a picture of any waste item — plastic bottles, food scraps, electronics, wrappers, containers, etc.
+Water Pollution
 
-2. AI Classification (Gemini Vision)
+Energy Use
 
-EcoVision sends the image to Google Gemini 2.5 Vision, which returns:
+♻️ Smart Disposal Steps
 
-Waste category
+Clear, actionable instructions (3–6 steps) for safe waste management.
 
-Analysis confidence score
+📝 Auto-Generated PDF Report
 
-Notes about the waste
+Includes:
 
-Disposal steps
-
-Environmental impact distribution
-
-3. Environmental Impact Breakdown
-
-The app generates a visual pie chart showing four impact metrics:
-
-🌫️ Greenhouse Emissions
-
-🧪 Soil Contamination
-
-💧 Water Pollution
-
-🔋 Energy Usage
-
-This helps users understand how harmful the waste is if disposed improperly.
-
-4. Smart Disposal Guidance
-
-EcoVision provides clear, actionable steps on:
-
-How to recycle it
-
-How to dispose of it safely
-
-How to reduce environmental harm
-
-5. PDF Report Generation
-
-Users can generate a beautifully formatted PDF report containing:
-
-Waste image
+Uploaded waste image
 
 Impact chart
 
-Category & confidence
+Category + confidence
 
-Disposal instructions
+Notes & disposal guidelines
 
-Expert notes
+Eco Tip of the Day
 
-Eco tip of the day
+Sanitized fonts for compatibility
 
-6. Dashboard & Data Tracking
+📊 Analytics Dashboard
 
-All analyses are stored locally and shown in a dashboard where users can:
+View all past analyses
 
 Filter by waste category
 
-View previous analyses
+Bar chart of category frequency
 
-Check impact history
+Local JSON storage: ecovision_stats.json
 
-Track trends in waste disposal
+✨ Modern UI & Animations
 
-🎨 User Interface & Experience
+Gradient animated background
 
-EcoVision includes:
+Glass-morphism cards
 
-A smooth gradient animated background
+Lottie animations for each section
 
-Frosted-glass cards (Glassmorphism UI)
+📁 Project Structure
+EcoVision/
+│── app.py
+│── ecovision_stats.json
+│── requirements.txt
+│── README.md
+│── fonts/
+│   └── (optional fonts for PDF)
 
-Lottie animations throughout the pages
+🛠️ Installation
+1. Clone the Repository
+git clone https://github.com/yourusername/EcoVision.git
+cd EcoVision
 
-Clean, modern typography
+2. Install Dependencies
+pip install -r requirements.txt
 
-A simple sidebar navigator
+🔑 Gemini API Setup
 
-Everything is crafted to make the experience feel futuristic, friendly, and intuitive.
+Create .streamlit/secrets.toml:
 
-📚 Use Cases
+GEMINI_API_KEY = "your_api_key_here"
 
-EcoVision can be used by:
 
-🧑‍🎓 Students & Researchers
+Or add via Streamlit Cloud → Settings → Secrets.
 
-To study waste, recycling, and environmental impacts.
+▶️ Run the App
+streamlit run app.py
 
-🏫 Schools & Colleges
 
-For sustainability education and science projects.
+App will start at:
 
-🏠 Households
+http://localhost:8501
 
-To learn proper waste segregation.
+📦 Recommended requirements.txt
+streamlit
+pillow
+matplotlib
+pandas
+fpdf2
+google-generativeai
+requests
+streamlit-lottie
 
-🏢 Companies & Offices
+🌿 How EcoVision Works
 
-To encourage green disposal habits.
+User uploads a waste image
 
-🧑‍🏭 Waste Management Teams
+Image + prompt sent to Gemini Vision
 
-For training and awareness programs.
+Strict JSON returned
 
-🌟 Why EcoVision Stands Out
+App generates:
 
-AI-powered accuracy
+Pie chart
 
-Real-time waste recognition
+Sanitized PDF report
 
-Beautiful UI with animations
+Dashboard entry
 
-Environmental analysis built-in
+Data stored locally in JSON
 
-Easy PDF export
+User views results instantly
 
-Fully offline storage (local JSON)
+🌱 Eco Tip of the Day
 
-Open-source friendly
+EcoVision rotates tips daily using date-based index mapping.
 
-Lightweight and beginner-friendly
+🤝 Contributing
 
-🌍 Vision
+All contributions are welcome!
+Whether you want to:
 
-EcoVision aims to create a world where every individual understands their environmental footprint and takes informed actions to reduce it.
+Improve UI
 
-The goal is simple:
-Make people more aware. Make waste less harmful. Make Earth cleaner.
+Add new waste categories
+
+Expand reporting
+
+Optimize performance
+
+Submit a PR anytime 🚀
+
+📜 License
+
+This project is released under the MIT License.
+
+⭐ Support the Project
+
+If you like EcoVision, give this repo a star ⭐ on GitHub — it helps more people discover it!
