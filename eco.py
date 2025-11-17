@@ -58,8 +58,6 @@ body {
 # Constants & Storage
 # =====================================================
 STATS_FILE = "ecovision_stats.json"
-FONTS_DIR = "fonts"
-UNICODE_FONT_PATH = os.path.join(FONTS_DIR, "DejaVuSans.ttf")
 
 # PDF layout constants (mm)
 PAGE_W = 210.0
@@ -86,6 +84,23 @@ ECO_TIPS = [
     "Bring your own shopping bag—avoid plastic carry bags.",
     "Use cloth towels instead of paper for everyday cleaning."
 ]
+
+def sanitize(text: str) -> str:
+    """
+    Remove/replace Unicode characters that Helvetica cannot render.
+    - replaces em-dash/en-dash with hyphen
+    - replaces bullet with hyphen
+    - removes common emoji like ♻️
+    - removes any remaining non-ASCII bytes
+    """
+    if not isinstance(text, str):
+        return ""
+    text = text.replace("—", "-").replace("–", "-")
+    text = text.replace("•", "-")
+    # remove a few common emoji / symbols used in the app header/footer
+    text = text.replace("♻️", "")
+    # strip any other non-ascii
+    return text.encode("ascii", "ignore").decode("ascii")
 
 def eco_tip_of_the_day() -> str:
     idx = date.today().toordinal() % len(ECO_TIPS)
@@ -144,16 +159,6 @@ def fig_pie_impact(impact: Dict[str, float]) -> bytes:
     buf.seek(0)
     return buf.read()
 
-def _register_unicode_font(pdf: FPDF) -> bool:
-    """
-    Registers a Unicode TTF font (DejaVuSans). Returns True if added, else False.
-    """
-    if os.path.exists(UNICODE_FONT_PATH):
-        pdf.add_font("DejaVu", "", UNICODE_FONT_PATH, uni=True)
-        pdf.set_font("DejaVu", "", 12)
-        return True
-    return False
-
 def store_result(image_bytes: bytes, result: Dict[str, Any]) -> Dict[str, Any]:
     rec_id = str(uuid.uuid4())
     ts = datetime.now().isoformat(timespec='seconds')
@@ -164,6 +169,7 @@ def store_result(image_bytes: bytes, result: Dict[str, Any]) -> Dict[str, Any]:
         "confidence": result.get("confidence", 0.0),
         "disposal_steps": result.get("disposal_steps", []),
         "impact_breakdown": result.get("impact_breakdown", {}),
+        # store raw notes but also ensure UI/PDF sanitized later
         "notes": result.get("notes", ""),
         "image_b64": base64.b64encode(image_bytes).decode("utf-8"),
     }
@@ -209,20 +215,23 @@ def call_gemini_for_waste(image: Image.Image) -> Dict[str, Any]:
     data["category"] = str(data.get("category", "mixed")).lower()
     data["confidence"] = float(data.get("confidence", 0.55))
     data["disposal_steps"] = list(data.get("disposal_steps", []))[:6]
-    data["notes"] = str(data.get("notes", ""))[:180]
-    return data 
+    # sanitize notes now so UI & PDF safer
+    data["notes"] = sanitize(str(data.get("notes", ""))[:180])
+    # also sanitize disposal steps just in case
+    data["disposal_steps"] = [sanitize(str(s)) for s in data["disposal_steps"]]
+    return data
 
 def _safe_cell(pdf: FPDF, txt: str, h: float = 8, ln: int = 1, font_name: str = "Helvetica", font_size: int = 12, color=(0,0,0)):
     pdf.set_x(MARGIN)
     pdf.set_font(font_name, "", font_size)
     pdf.set_text_color(*color)
-    pdf.cell(EFF_W, h, txt, ln=ln)
+    pdf.cell(EFF_W, h, sanitize(txt), ln=ln)
 
 def _safe_multicell(pdf: FPDF, txt: str, h: float = 7, font_name: str = "Helvetica", font_size: int = 12, color=(0,0,0)):
     pdf.set_x(MARGIN)
     pdf.set_font(font_name, "", font_size)
     pdf.set_text_color(*color)
-    pdf.multi_cell(EFF_W, h, txt)
+    pdf.multi_cell(EFF_W, h, sanitize(txt))
 
 def _place_two_images(pdf: FPDF, img1_path: str, img2_path: str, w1: float, w2: float, gutter: float = 6.0):
     """
@@ -255,14 +264,14 @@ def make_pdf_report(record: Dict[str, Any], pie_png: bytes, title: str = "EcoVis
     pdf = FPDF(unit="mm", format="A4")
     pdf.set_margins(MARGIN, MARGIN, MARGIN)
     pdf.set_auto_page_break(auto=True, margin=MARGIN)
-    unicode_ok = _register_unicode_font(pdf)
-    font_name = "DejaVu" if unicode_ok else "Helvetica"
+
+    font_name = "Helvetica"
 
     pdf.add_page()
 
     # Header
-    _safe_cell(pdf, (title if unicode_ok else title.replace("•", "-")), h=10, ln=1, font_name=font_name, font_size=20, color=(0,0,0))
-    _safe_cell(pdf, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", h=8, ln=1, font_name=font_name, font_size=11, color=(100,100,100))
+    _safe_cell(pdf, sanitize(title), h=10, ln=1, font_name=font_name, font_size=20, color=(0,0,0))
+    _safe_cell(pdf, sanitize(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"), h=8, ln=1, font_name=font_name, font_size=11, color=(100,100,100))
     pdf.ln(2)
 
     # Side-by-side images inside margins
@@ -275,16 +284,16 @@ def make_pdf_report(record: Dict[str, Any], pie_png: bytes, title: str = "EcoVis
         with open(pie_img_path, "wb") as f:
             f.write(pie_png)
 
-        # Safe widths that always fit: 72 + 6 + 72 = 150 ≤ 180 (effective)
+        # Safe widths that always fit
         _place_two_images(pdf, waste_img_path, pie_img_path, w1=72.0, w2=72.0, gutter=6.0)
 
     # Analysis Summary
     _safe_cell(pdf, "Analysis Summary", h=9, ln=1, font_name=font_name, font_size=14)
-    sep = " • " if unicode_ok else " - "
-    cat_text = record.get('category', '-').title()
+    sep = " - "
+    cat_text = sanitize(record.get('category', '-').title())
     conf_text = f"{round(record.get('confidence', 0) * 100, 1)}%"
     _safe_cell(pdf, f"Category: {cat_text}{sep}Confidence: {conf_text}", h=8, ln=1, font_name=font_name, font_size=12)
-    notes = record.get("notes", "-");  notes = notes if unicode_ok else notes.replace("•", "-")
+    notes = sanitize(record.get("notes", "-"))
     _safe_multicell(pdf, f"Notes: {notes}", h=7, font_name=font_name, font_size=12)
 
     # What Image Shows
@@ -292,8 +301,10 @@ def make_pdf_report(record: Dict[str, Any], pie_png: bytes, title: str = "EcoVis
     _safe_cell(pdf, "What This Image Shows:", h=8, ln=1, font_name=font_name, font_size=13)
     _safe_multicell(
         pdf,
-        f"This appears to show {record.get('category','mixed')} waste. "
-        f"The materials visible require proper sorting and handling to prevent contamination.",
+        sanitize(
+            f"This appears to show {record.get('category','mixed')} waste. "
+            f"The materials visible require proper sorting and handling to prevent contamination."
+        ),
         h=7, font_name=font_name, font_size=12
     )
 
@@ -301,7 +312,7 @@ def make_pdf_report(record: Dict[str, Any], pie_png: bytes, title: str = "EcoVis
     pdf.ln(1)
     _safe_cell(pdf, "How to Recycle / Dispose It:", h=8, ln=1, font_name=font_name, font_size=13)
     for i, step in enumerate(record.get("disposal_steps", []), start=1):
-        s = step if unicode_ok else step.replace("•", "-")
+        s = sanitize(step)
         _safe_multicell(pdf, f"{i}. {s}", h=7, font_name=font_name, font_size=12)
 
     # Harmful Effects
@@ -309,32 +320,31 @@ def make_pdf_report(record: Dict[str, Any], pie_png: bytes, title: str = "EcoVis
     _safe_cell(pdf, "Why Improper Disposal Is Harmful:", h=8, ln=1, font_name=font_name, font_size=13)
     _safe_multicell(
         pdf,
-        "Improper disposal can contaminate soil and water, attract pests, "
-        "release greenhouse gases and toxins, and harm local ecosystems and health.",
+        sanitize(
+            "Improper disposal can contaminate soil and water, attract pests, "
+            "release greenhouse gases and toxins, and harm local ecosystems and health."
+        ),
         h=7, font_name=font_name, font_size=12
     )
 
     # Eco Tip of the Day
     pdf.ln(1)
     _safe_cell(pdf, "Eco Tip of the Day:", h=8, ln=1, font_name=font_name, font_size=13)
-    _safe_multicell(pdf, eco_tip_of_the_day(), h=7, font_name=font_name, font_size=12)
+    _safe_multicell(pdf, sanitize(eco_tip_of_the_day()), h=7, font_name=font_name, font_size=12)
 
     # Impact Breakdown
     pdf.ln(1)
     _safe_cell(pdf, "Impact Breakdown (%):", h=8, ln=1, font_name=font_name, font_size=13)
     for k in IMPACT_LABELS:
         v = record.get("impact_breakdown", {}).get(k, 0)
-        _safe_cell(pdf, f"- {k}: {v}%", h=7, ln=1, font_name=font_name, font_size=12)
+        _safe_cell(pdf, f"- {sanitize(k)}: {v}%", h=7, ln=1, font_name=font_name, font_size=12)
 
     # Footer
     pdf.ln(5)
     pdf.set_y(PAGE_H - MARGIN + 2)
     pdf.set_x(MARGIN)
-    footer = "EcoVision • Automated insight. Human responsibility."
-    if not unicode_ok:
-        footer = footer.replace("•", "-")
+    footer = "EcoVision - Automated insight. Human responsibility."
     _safe_cell(pdf, footer, h=8, ln=1, font_name=font_name, font_size=10, color=(120,120,120))
-
 
     result = pdf.output(dest="S")
     if isinstance(result, (bytes, bytearray)):
@@ -345,6 +355,9 @@ def make_pdf_report(record: Dict[str, Any], pie_png: bytes, title: str = "EcoVis
         raise TypeError(f"Unexpected PDF output type: {type(result)}")
 
 
+# ---------------------------
+# UI
+# ---------------------------
 left, right = st.columns([0.65, 0.35])
 with left:
     st.markdown("<h1 class='ecov-gradient'>EcoVision</h1>", unsafe_allow_html=True)
@@ -489,7 +502,6 @@ elif section == "Waste Analyser":
 elif section == "Download Report":
     st.subheader("Download Report")
 
-    
     rep_anim = load_lottie_any(LOTTIE_URLS["report"])
     if rep_anim:
         st_lottie(rep_anim, height=300)
@@ -497,6 +509,7 @@ elif section == "Download Report":
     if not st.session_state.history:
         st.warning("No analyses yet. Go to 'Waste Analyser' first.")
     else:
+        # keep the selectbox UI readable (it can show the bullet), PDF will sanitize anyway
         options = {f"{h['timestamp']} • {h['category'].title()}": i for i, h in enumerate(st.session_state.history)}
         sel = st.selectbox("Select an analysis", list(options.keys()))
         rec = st.session_state.history[options[sel]]
