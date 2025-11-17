@@ -1,4 +1,5 @@
 🌿 EcoVision – AI Smart Waste Analyzer
+![image alt](https://github.com/Jaybisen08/EcoVision/blob/main/ecovision.png?raw=true)
 
 🌎 Overview
 
